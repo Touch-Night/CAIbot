@@ -1,0 +1,23 @@
+package net.touchnight;
+
+import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
+import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescriptionBuilder;
+import net.mamoe.mirai.event.GlobalEventChannel;
+
+public final class CAIbot extends JavaPlugin {
+    public static final CAIbot INSTANCE = new CAIbot();
+
+    private CAIbot() {
+        super(new JvmPluginDescriptionBuilder("net.touchnight.caibot", "0.1.0")
+                .name("CAIbot")
+                .info("连接qq机器人和cai角色")
+                .author("TouchNight")
+                .build());
+    }
+
+    @Override
+    public void onEnable() {
+        getLogger().info("Plugin loaded!");
+        GlobalEventChannel.INSTANCE.registerListenerHost(new CAIListener());
+    }
+}
