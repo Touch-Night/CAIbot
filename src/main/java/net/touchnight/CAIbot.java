@@ -4,6 +4,8 @@ import net.mamoe.mirai.console.plugin.jvm.JavaPlugin;
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescriptionBuilder;
 import net.mamoe.mirai.event.GlobalEventChannel;
 
+import java.io.IOException;
+
 public final class CAIbot extends JavaPlugin {
     public static final CAIbot INSTANCE = new CAIbot();
 
@@ -18,6 +20,10 @@ public final class CAIbot extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("Plugin loaded!");
-        GlobalEventChannel.INSTANCE.registerListenerHost(new CAIListener());
+        try {
+            GlobalEventChannel.INSTANCE.registerListenerHost(new CAIListener());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

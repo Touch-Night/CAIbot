@@ -11,18 +11,39 @@ import net.mamoe.mirai.event.events.MessageEvent;
 import net.mamoe.mirai.message.data.*;
 import okhttp3.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 
 
 public class CAIListener extends SimpleListenerHost {
-    public static String Authorization = "eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxMDMzNiwidXNlcl9rZXkiOiJmYTRiOTljNTQxY2E0YWRiOThiMDlmNTRlNjlkYmQ5NiIsInVzZXJuYW1lIjoi6ZmG5YWJ5Y2OIn0.QOMRpNSFxis3Rpwu7E5Lj2Wxl2fWWHIgzWIrkv1MhIYuTxJ17LJP9aZ0zvl6MEeq7x7ksD26f2nlJtta6FuKjQ";
-    public static String Id = "1780";
+    public static String Authorization = "";
+    public static String Id = "";
     public static String MsgId = "";
     public static String CommandPrefix = "/";
-    public static long Admin = 1762918301;
+    public static long Admin = 10000;
+    public CAIListener() throws IOException {
+        try {
+            Properties pro = new Properties();
+            pro.load(new FileInputStream("config\\CAIconf.properties"));
+            Authorization = pro.getProperty("Authorization");
+            Id = pro.getProperty("Id");
+            CommandPrefix = pro.getProperty("CommandPrefix");
+            Admin = Long.parseLong(pro.getProperty("Admin"));
+            System.out.println("已加载配置");
+        } catch (FileNotFoundException e) {
+            Properties pro = new Properties();
+            pro.setProperty("Authorization", "");
+            pro.setProperty("Id", "");
+            pro.setProperty("CommandPrefix", "/");
+            pro.setProperty("Admin", "10000");
+            pro.store(new FileOutputStream("config\\CAIconf.properties"),"Follow Instruction");
+            System.out.println("已创建配置文件");
+        }
+    }
+
     @EventHandler
     private ListeningStatus onEvent(MessageEvent event) throws Exception {
         String msg = event.getMessage().serializeToMiraiCode();
