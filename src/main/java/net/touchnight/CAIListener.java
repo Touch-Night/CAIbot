@@ -27,7 +27,7 @@ public class CAIListener extends SimpleListenerHost {
     public CAIListener() throws IOException {
         try {
             Properties pro = new Properties();
-            pro.load(new FileInputStream("config\\CAIconf.properties"));
+            pro.load(new FileInputStream("config/CAIconf.properties"));
             Authorization = pro.getProperty("Authorization");
             Id = pro.getProperty("Id");
             CommandPrefix = pro.getProperty("CommandPrefix");
@@ -39,7 +39,7 @@ public class CAIListener extends SimpleListenerHost {
             pro.setProperty("Id", "");
             pro.setProperty("CommandPrefix", "/");
             pro.setProperty("Admin", "10000");
-            pro.store(new FileOutputStream("config\\CAIconf.properties"),"Follow Instruction");
+            pro.store(new FileOutputStream("config/CAIconf.properties"),"Follow Instruction");
             System.out.println("已创建配置文件");
         }
     }
