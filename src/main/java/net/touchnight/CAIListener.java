@@ -135,7 +135,7 @@ public class CAIListener extends SimpleListenerHost {
                     event.getSubject().sendMessage(chain);
                 } else {
                     MessageChain chain = new MessageChainBuilder()
-                            .append("我不认识" + newID + "这个ID对应的角色，它应该没有出现在你在AI乌托邦的聊天列表里吧。ID应该是一串不长的数字")
+                            .append("我不认识" + newID + "这个ID对应的角色，它应该没有出现在你在AI乌托邦的聊天列表里吧，也有可能你还没有微信登录。ID应该是一串不长的数字")
                             .build();
                     event.getSubject().sendMessage(chain);
                 }
@@ -166,7 +166,12 @@ public class CAIListener extends SimpleListenerHost {
 
     private void resetAuth(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))){
-            String newAuth = msg.substring("重设密钥".length() + 1);
+            String newAuth = "";
+            try {
+                newAuth = msg.substring("重设密钥".length() + 1);
+            } catch (StringIndexOutOfBoundsException e) {
+                newAuth = "";
+            }
             Authorization = newAuth;
             try {
                 Properties pro = new Properties();
@@ -199,22 +204,34 @@ public class CAIListener extends SimpleListenerHost {
 
     private  void resetPrefix(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin) {
-            String newPrefix = msg.substring("重设命令前缀" .length() + 1);
-            CommandPrefix = newPrefix;
-            try {
-                Properties pro = new Properties();
-                pro.load(new FileInputStream("config/CAIconf.properties"));
-                OutputStream ops = new FileOutputStream("config/CAIconf.properties");
-                pro.setProperty("CommandPrefix", newPrefix);
-                pro.store(ops, "更改了命令前缀");
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("更新newPrefix出错");
+            String newPrefix = "";
+            try{
+                newPrefix = msg.substring("重设命令前缀" .length() + 1);
+            } catch (StringIndexOutOfBoundsException e) {
+                newPrefix = "";
             }
-            MessageChain chain = new MessageChainBuilder()
-                    .append("已重设命令前缀为" + newPrefix)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (newPrefix.length() <=0 ) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append("我的命令前缀呢？")
+                        .build();
+                event.getSubject().sendMessage(chain);
+            } else {
+                CommandPrefix = newPrefix;
+                try {
+                    Properties pro = new Properties();
+                    pro.load(new FileInputStream("config/CAIconf.properties"));
+                    OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                    pro.setProperty("CommandPrefix", newPrefix);
+                    pro.store(ops, "更改了命令前缀");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("更新newPrefix出错");
+                }
+                MessageChain chain = new MessageChainBuilder()
+                        .append("已重设命令前缀为" + newPrefix)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         } else {
             MessageChain chain = new MessageChainBuilder()
                     .append(NoPower)
