@@ -1,6 +1,5 @@
 package net.touchnight;
 
-import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import net.mamoe.mirai.contact.Contact;
@@ -13,6 +12,8 @@ import okhttp3.*;
 
 import java.io.*;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,9 @@ public class CAIListener extends SimpleListenerHost {
     public static String Id = "";
     public static String MsgId = "";
     public static String CommandPrefix = "/";
-    public static long Admin = 10000;
+    public static long InitAdmin = 10000;
+    public static ArrayList<String> Admins;
+    public static String NoPower = "你的权限不够";
     public CAIListener() throws IOException {
         try {
             Properties pro = new Properties();
@@ -31,15 +34,19 @@ public class CAIListener extends SimpleListenerHost {
             Authorization = pro.getProperty("Authorization");
             Id = pro.getProperty("Id");
             CommandPrefix = pro.getProperty("CommandPrefix");
-            Admin = Long.parseLong(pro.getProperty("Admin"));
+            InitAdmin = Long.parseLong(pro.getProperty("InitAdmin"));
+            Admins = new ArrayList<>(Arrays.asList(pro.getProperty("Admins").split(",")));
+            NoPower = pro.getProperty("NoPower");
             System.out.println("已加载配置");
         } catch (FileNotFoundException e) {
             Properties pro = new Properties();
             pro.setProperty("Authorization", "");
             pro.setProperty("Id", "");
             pro.setProperty("CommandPrefix", "/");
-            pro.setProperty("Admin", "10000");
-            pro.store(new FileOutputStream("config/CAIconf.properties"),"Follow Instruction");
+            pro.setProperty("InitAdmin", "10000");
+            pro.setProperty("Admins", "");
+            pro.setProperty("NoPower", "你的权限不够");
+            pro.store(new FileOutputStream("config/CAIconf.properties"),"see https://mirai.mamoe.net/topic/1904/caibot-%E8%BF%9E%E6%8E%A5ai%E4%B9%8C%E6%89%98%E9%82%A6%E4%B8%8Eqq%E8%81%8A%E5%A4%A9%E6%9C%BA%E5%99%A8%E4%BA%BA for instuctions");
             System.out.println("已创建配置文件");
         }
     }
@@ -50,18 +57,35 @@ public class CAIListener extends SimpleListenerHost {
         String realMsg = event.getMessage().contentToString();
         String at = "[mirai:at:" + event.getBot().getId() + "]";
         String realAt = "@" + event.getBot().getId();
-        if (msg.contains(at)) {
+        if (msg.contains(at) && !msg.startsWith(CommandPrefix)) {
             if (msg.startsWith(at)) {
                 msg = msg.substring(at.length());
                 realMsg = realMsg.substring(realAt.length());
             }
             msg = msg.replace(at, getName(Id));
             realMsg = realMsg.replace(realAt, getName(Id));
-            MessageChain chain = new MessageChainBuilder()
-                    .append(new QuoteReply(event.getMessage()))
-                    .append(getAns(realMsg).getString("content"))
-                    .build();
-            event.getSubject().sendMessage(chain);}
+            if (getName(Id) == "???"){
+                if (Id == "") {
+                    MessageChain chain = new MessageChainBuilder()
+                            .append(new QuoteReply(event.getMessage()))
+                            .append(getAns(realMsg).getString("我还不知道我是谁，请先用 " + CommandPrefix + "重设ID <newID> 指令来让我知道我的身份"))
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                } else {
+                    MessageChain chain = new MessageChainBuilder()
+                            .append(new QuoteReply(event.getMessage()))
+                            .append(getAns(realMsg).getString("我不认识" + Id + "这个ID对应的角色，它似乎没有出现在你AI乌托邦的聊天列表中"))
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                }
+            } else {
+                MessageChain chain = new MessageChainBuilder()
+                        .append(new QuoteReply(event.getMessage()))
+                        .append(getAns(realMsg).getString("content"))
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
+        }
         if (msg.startsWith(CommandPrefix)) {
             msg = msg.substring(CommandPrefix.length());
             if (msg.equals("重启对话")){
@@ -82,42 +106,113 @@ public class CAIListener extends SimpleListenerHost {
             if (msg.equals("微信登录")){
                 WeChatLogin(event);
             }
+            if (msg.startsWith("添加管理员")){
+                op(msg, event);
+            }
+            if (msg.startsWith("移除管理员")){
+                deop(msg, event);
+            }
+            if (msg.startsWith("重设权限不够时的回复")){
+                noPower(msg, event);
+            }
         }
         return ListeningStatus.LISTENING;
     }
 
-    private  void resetID(String msg, MessageEvent event) throws Exception {
-        if (event.getSender().getId() == Admin){
+    private void resetID(String msg, MessageEvent event) {
+        if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))){
             String newID = msg.substring("重设ID".length() + 1);
-            Id = newID;
+            if (getName(newID) == "???"){
+                if (newID == "") {
+                    MessageChain chain = new MessageChainBuilder()
+                            .append("我的ID在哪？我怎么没看见？")
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                } else {
+                    MessageChain chain = new MessageChainBuilder()
+                            .append("我不认识" + newID + "这个ID对应的角色，它应该没有出现在你在AI乌托邦的聊天列表里吧。ID应该是一串不长的数字")
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                }
+            } else {
+                Id = newID;
+                try {
+                    Properties pro = new Properties();
+                    pro.load(new FileInputStream("config/CAIconf.properties"));
+                    OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                    pro.setProperty("Id", newID);
+                    pro.store(ops, "更改了角色ID");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("更新newID出错");
+                }
+                MessageChain chain = new MessageChainBuilder()
+                        .append("已重设ID为" + newID + "，现在我是" + getName(newID))
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
+        } else {
             MessageChain chain = new MessageChainBuilder()
-                    .append("已重设ID为" + newID + "，现在我是" + getName(newID))
+                    .append(NoPower)
                     .build();
             event.getSubject().sendMessage(chain);
         }
     }
 
-    private  void resetAuth(String msg, MessageEvent event) throws Exception {
-        if (event.getSender().getId() == Admin){
+    private void resetAuth(String msg, MessageEvent event) {
+        if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))){
             String newAuth = msg.substring("重设密钥".length() + 1);
             Authorization = newAuth;
+            try {
+                Properties pro = new Properties();
+                pro.load(new FileInputStream("config/CAIconf.properties"));
+                OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                pro.setProperty("Authorization", newAuth);
+                pro.store(ops, "更改了登录密钥");
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("更新newAuth出错");
+            }
             String shortAuth = newAuth;
             if (newAuth.length() > 9) {
                 shortAuth = newAuth.substring(0,5) + "..." + newAuth.substring(newAuth.length() - 4);
+            }
+            if (newAuth.length() <= 0){
+                shortAuth = "...等下，你在指令后面什么都没写呢";
             }
             MessageChain chain = new MessageChainBuilder()
                     .append("已重设密钥为" + shortAuth)
                     .build();
             event.getSubject().sendMessage(chain);
+        } else {
+            MessageChain chain = new MessageChainBuilder()
+                    .append(NoPower)
+                    .build();
+            event.getSubject().sendMessage(chain);
         }
     }
 
-    private  void resetPrefix(String msg, MessageEvent event) throws Exception {
-        if (event.getSender().getId() == Admin) {
+    private  void resetPrefix(String msg, MessageEvent event) {
+        if (event.getSender().getId() == InitAdmin) {
             String newPrefix = msg.substring("重设命令前缀" .length() + 1);
-            Authorization = newPrefix;
+            CommandPrefix = newPrefix;
+            try {
+                Properties pro = new Properties();
+                pro.load(new FileInputStream("config/CAIconf.properties"));
+                OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                pro.setProperty("CommandPrefix", newPrefix);
+                pro.store(ops, "更改了命令前缀");
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("更新newPrefix出错");
+            }
             MessageChain chain = new MessageChainBuilder()
                     .append("已重设命令前缀为" + newPrefix)
+                    .build();
+            event.getSubject().sendMessage(chain);
+        } else {
+            MessageChain chain = new MessageChainBuilder()
+                    .append(NoPower)
                     .build();
             event.getSubject().sendMessage(chain);
         }
@@ -245,7 +340,7 @@ public class CAIListener extends SimpleListenerHost {
         response.close();
     }
 
-    private String getName(String id) throws Exception {
+    private String getName(String id) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(50, TimeUnit.SECONDS)
                 .readTimeout(50, TimeUnit.SECONDS)
@@ -263,22 +358,166 @@ public class CAIListener extends SimpleListenerHost {
                 .addHeader("Te", "trailers")
                 .addHeader("Authorization", Authorization)
                 .build();
-        Response response = client.newCall(request).execute();
-        String stringAns1 = response.body().string();
-        JSONObject jsonAns = JSONObject.parseObject(stringAns1);
-        String stringAns2 = jsonAns.getString("data");
-        JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
-        JSONArray contentArray = jsonAns2.getJSONArray("content");
-        String name = "";
-        for (int i = 0; i < contentArray.size(); i++) {
-            String RoleId = contentArray.getJSONObject(i).getString("roleId");
-            String RoleName = contentArray.getJSONObject(i).getString("roleName");
-            if (RoleId.equals(id)) {
-                name = RoleName;
+        try {
+            Response response = client.newCall(request).execute();
+            String stringAns1 = response.body().string();
+            JSONObject jsonAns = JSONObject.parseObject(stringAns1);
+            String stringAns2 = jsonAns.getString("data");
+            JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
+            JSONArray contentArray = jsonAns2.getJSONArray("content");
+            String name = "";
+            for (int i = 0; i < contentArray.size(); i++) {
+                String RoleId = contentArray.getJSONObject(i).getString("roleId");
+                String RoleName = contentArray.getJSONObject(i).getString("roleName");
+                if (RoleId.equals(id)) {
+                    name = RoleName;
+                }
             }
+            response.close();
+            return name;
+        } catch (Exception e) {
+            return "???";
         }
-        response.close();
-        return name;
+    }
+    private void op(String msg, MessageEvent event) {
+        if (event.getSender().getId() == InitAdmin) {
+            String newAdmin = msg.substring("添加管理员" .length() + 1);
+            String atStart = "[mirai:at:";
+            if (newAdmin.startsWith(atStart)) {
+                newAdmin = newAdmin.substring(atStart.length());
+                newAdmin = newAdmin.substring(0, newAdmin.indexOf("]"));
+            }
+            if (newAdmin == Long.toString(InitAdmin)) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append(new At(InitAdmin))
+                        .append("已经是超级管理员了")
+                        .build();
+                event.getSubject().sendMessage(chain);
+            } else {
+                if (Admins.contains(newAdmin)){
+                    MessageChain chain = new MessageChainBuilder()
+                            .append(new At(Long.parseLong(newAdmin)))
+                            .append("早就是管理员了")
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                } else {
+                    if (Long.parseLong(newAdmin) == event.getBot().getId()) {
+                        MessageChain chain = new MessageChainBuilder()
+                                .append("我是" + getName(Id) + "，不想当管理员")
+                                .build();
+                        event.getSubject().sendMessage(chain);
+                    } else {
+                        Admins.add(newAdmin);
+                        try {
+                            Properties pro = new Properties();
+                            pro.load(new FileInputStream("config/CAIconf.properties"));
+                            OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                            pro.setProperty("Admins", String.join(",", Admins));
+                            pro.store(ops, "新增了" + newAdmin + "为管理员");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.out.println("更新管理员列表出错");
+                        }
+                        MessageChain chain = new MessageChainBuilder()
+                                .append("已将")
+                                .append(new At(Long.parseLong(newAdmin)))
+                                .append("设为管理员")
+                                .build();
+                        event.getSubject().sendMessage(chain);
+                    }
+                }
+            }
+        } else {
+            MessageChain chain = new MessageChainBuilder()
+                    .append(NoPower)
+                    .build();
+            event.getSubject().sendMessage(chain);
+        }
+    }
+
+    private void deop(String msg, MessageEvent event) throws Exception {
+        if (event.getSender().getId() == InitAdmin) {
+            String newAdmin = msg.substring("移除管理员" .length() + 1);
+            String atStart = "[mirai:at:";
+            if (newAdmin.startsWith(atStart)) {
+                newAdmin = newAdmin.substring(atStart.length());
+                newAdmin = newAdmin.substring(0, newAdmin.indexOf("]"));
+            }
+            if (newAdmin == Long.toString(InitAdmin)) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append(new At(InitAdmin))
+                        .append("不能移除超级管理员")
+                        .build();
+                event.getSubject().sendMessage(chain);
+            } else {
+                if (!Admins.contains(newAdmin)){
+                    if (Long.parseLong(newAdmin) == event.getBot().getId()) {
+                        MessageChain chain = new MessageChainBuilder()
+                                .append("我是" + getName(Id) + "，不是管理员")
+                                .build();
+                        event.getSubject().sendMessage(chain);
+                    } else {
+                        MessageChain chain = new MessageChainBuilder()
+                                .append(new At(Long.parseLong(newAdmin)))
+                                .append("本就不是管理员")
+                                .build();
+                        event.getSubject().sendMessage(chain);
+                    }
+                } else {
+                    for(int i = 0; i < Admins.size(); i++){
+                        if(Admins.get(i) == newAdmin) {
+                            Admins.remove(i--);
+                        }
+                    }
+                    try {
+                        Properties pro = new Properties();
+                        pro.load(new FileInputStream("config/CAIconf.properties"));
+                        OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                        pro.setProperty("Admins", String.join(",", Admins));
+                        pro.store(ops, "将" + newAdmin + "从管理员列表中移除了");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.out.println("更新管理员列表出错");
+                    }
+                    MessageChain chain = new MessageChainBuilder()
+                            .append("已撤销")
+                            .append(new At(Long.parseLong(newAdmin)))
+                            .append("的管理员身份")
+                            .build();
+                    event.getSubject().sendMessage(chain);
+                }
+            }
+        } else {
+            MessageChain chain = new MessageChainBuilder()
+                    .append(NoPower)
+                    .build();
+            event.getSubject().sendMessage(chain);
+        }
+    }
+    private void noPower(String msg, MessageEvent event){
+        if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))) {
+            String newNoPower = msg.substring("重设权限不够时的回复" .length() + 1);
+            NoPower = newNoPower;
+            try {
+                Properties pro = new Properties();
+                pro.load(new FileInputStream("config/CAIconf.properties"));
+                OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+                pro.setProperty("NoPower", newNoPower);
+                pro.store(ops, "更改了权限不够时的回复");
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("更新newNoPower出错");
+            }
+            MessageChain chain = new MessageChainBuilder()
+                    .append("已重设权限不够时的回复为" + newNoPower)
+                    .build();
+            event.getSubject().sendMessage(chain);
+        } else {
+            MessageChain chain = new MessageChainBuilder()
+                    .append(NoPower)
+                    .build();
+            event.getSubject().sendMessage(chain);
+        }
     }
     private void WeChatLogin(MessageEvent event) throws IOException {
         OkHttpClient client = new OkHttpClient.Builder()
@@ -404,6 +643,16 @@ public class CAIListener extends SimpleListenerHost {
         String AccessToken = jsonToken2.getString("access_token");
         response5.close();
         Authorization = AccessToken;
+        try {
+            Properties pro = new Properties();
+            pro.load(new FileInputStream("config/CAIconf.properties"));
+            OutputStream ops = new FileOutputStream("config/CAIconf.properties");
+            pro.setProperty("Authorization", AccessToken);
+            pro.store(ops, "通过微信登录自动更新了密钥");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("微信登录出错");
+        }
         MessageChain chain = new MessageChainBuilder()
                 .append(new QuoteReply(event.getMessage()))
                 .append("已成功登录")
