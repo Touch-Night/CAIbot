@@ -48,6 +48,7 @@ public class CAIListener extends SimpleListenerHost {
             pro.setProperty("NoPower", "你的权限不够");
             pro.store(new FileOutputStream("config/CAIconf.properties"),"see https://mirai.mamoe.net/topic/1904/caibot-%E8%BF%9E%E6%8E%A5ai%E4%B9%8C%E6%89%98%E9%82%A6%E4%B8%8Eqq%E8%81%8A%E5%A4%A9%E6%9C%BA%E5%99%A8%E4%BA%BA for instuctions");
             System.out.println("已创建配置文件");
+            throw e;
         }
     }
 
@@ -125,7 +126,7 @@ public class CAIListener extends SimpleListenerHost {
             try {
                 newID = msg.substring("重设ID".length() + 1);
             } catch (StringIndexOutOfBoundsException e) {
-                newID = "";
+                throw e;
             }
             if (getName(newID) == ""){
                 if (newID == "") {
@@ -172,7 +173,7 @@ public class CAIListener extends SimpleListenerHost {
             try {
                 newAuth = msg.substring("重设密钥".length() + 1);
             } catch (StringIndexOutOfBoundsException e) {
-                newAuth = "";
+                throw e;
             }
             Authorization = newAuth;
             try {
@@ -212,7 +213,7 @@ public class CAIListener extends SimpleListenerHost {
             try{
                 newPrefix = msg.substring("重设命令前缀" .length() + 1);
             } catch (StringIndexOutOfBoundsException e) {
-                newPrefix = "";
+                throw e;
             }
             if (newPrefix.length() <=0 ) {
                 MessageChain chain = new MessageChainBuilder()
@@ -429,6 +430,7 @@ public class CAIListener extends SimpleListenerHost {
                         .append("要添加谁为管理员？")
                         .build();
                 event.getSubject().sendMessage(chain);
+                throw ex;
             }
             String atStart = "[mirai:at:";
             if (newAdmin.startsWith(atStart) && newAdmin != "") {
@@ -495,6 +497,7 @@ public class CAIListener extends SimpleListenerHost {
                         .append("要将谁从管理员列表中移除？")
                         .build();
                 event.getSubject().sendMessage(chain);
+                throw ex;
             }
             String atStart = "[mirai:at:";
             if (delAdmin.startsWith(atStart) && delAdmin != "") {
@@ -561,6 +564,7 @@ public class CAIListener extends SimpleListenerHost {
                         .append("已关闭权限不够时的提示信息")
                         .build();
                 event.getSubject().sendMessage(chain);
+                throw ex;
             }
             NoPower = newNoPower;
             try {
