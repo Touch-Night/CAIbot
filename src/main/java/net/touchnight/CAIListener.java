@@ -157,10 +157,12 @@ public class CAIListener extends SimpleListenerHost {
                 event.getSubject().sendMessage(chain);
             }
         } else {
-            MessageChain chain = new MessageChainBuilder()
-                    .append(NoPower)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (NoPower != ""){
+                MessageChain chain = new MessageChainBuilder()
+                        .append(NoPower)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         }
     }
 
@@ -195,10 +197,12 @@ public class CAIListener extends SimpleListenerHost {
                     .build();
             event.getSubject().sendMessage(chain);
         } else {
-            MessageChain chain = new MessageChainBuilder()
-                    .append(NoPower)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (NoPower != ""){
+                MessageChain chain = new MessageChainBuilder()
+                        .append(NoPower)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         }
     }
 
@@ -233,10 +237,12 @@ public class CAIListener extends SimpleListenerHost {
                 event.getSubject().sendMessage(chain);
             }
         } else {
-            MessageChain chain = new MessageChainBuilder()
-                    .append(NoPower)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (NoPower != ""){
+                MessageChain chain = new MessageChainBuilder()
+                        .append(NoPower)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         }
     }
 
@@ -415,13 +421,21 @@ public class CAIListener extends SimpleListenerHost {
     }
     private void op(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin) {
-            String newAdmin = msg.substring("添加管理员" .length() + 1);
+            String newAdmin = "";
+            try {
+                newAdmin = msg.substring("添加管理员" .length() + 1);
+            } catch (StringIndexOutOfBoundsException ex) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append("要添加谁为管理员？")
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
             String atStart = "[mirai:at:";
-            if (newAdmin.startsWith(atStart)) {
+            if (newAdmin.startsWith(atStart) && newAdmin != "") {
                 newAdmin = newAdmin.substring(atStart.length());
                 newAdmin = newAdmin.substring(0, newAdmin.indexOf("]"));
             }
-            if (newAdmin == Long.toString(InitAdmin)) {
+            if (newAdmin == Long.toString(InitAdmin) && newAdmin != "") {
                 MessageChain chain = new MessageChainBuilder()
                         .append(new At(InitAdmin))
                         .append("已经是超级管理员了")
@@ -462,75 +476,93 @@ public class CAIListener extends SimpleListenerHost {
                 }
             }
         } else {
-            MessageChain chain = new MessageChainBuilder()
-                    .append(NoPower)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (NoPower != ""){
+                MessageChain chain = new MessageChainBuilder()
+                        .append(NoPower)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         }
     }
 
-    private void deop(String msg, MessageEvent event) throws Exception {
+    private void deop(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin) {
-            String newAdmin = msg.substring("移除管理员" .length() + 1);
-            String atStart = "[mirai:at:";
-            if (newAdmin.startsWith(atStart)) {
-                newAdmin = newAdmin.substring(atStart.length());
-                newAdmin = newAdmin.substring(0, newAdmin.indexOf("]"));
+            String delAdmin = "";
+            try {
+                delAdmin = msg.substring("移除管理员" .length() + 1);
+            } catch (StringIndexOutOfBoundsException ex) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append(new At(InitAdmin))
+                        .append("要将谁从管理员列表中移除？")
+                        .build();
+                event.getSubject().sendMessage(chain);
             }
-            if (newAdmin == Long.toString(InitAdmin)) {
+            String atStart = "[mirai:at:";
+            if (delAdmin.startsWith(atStart) && delAdmin != "") {
+                delAdmin = delAdmin.substring(atStart.length());
+                delAdmin = delAdmin.substring(0, delAdmin.indexOf("]"));
+            }
+            if (delAdmin == Long.toString(InitAdmin) && delAdmin != "") {
                 MessageChain chain = new MessageChainBuilder()
                         .append(new At(InitAdmin))
                         .append("不能移除超级管理员")
                         .build();
                 event.getSubject().sendMessage(chain);
             } else {
-                if (!Admins.contains(newAdmin)){
-                    if (Long.parseLong(newAdmin) == event.getBot().getId()) {
+                if (!Admins.contains(delAdmin)){
+                    if (Long.parseLong(delAdmin) == event.getBot().getId()) {
                         MessageChain chain = new MessageChainBuilder()
                                 .append("我是" + getName(Id) + "，不是管理员")
                                 .build();
                         event.getSubject().sendMessage(chain);
                     } else {
                         MessageChain chain = new MessageChainBuilder()
-                                .append(new At(Long.parseLong(newAdmin)))
+                                .append(new At(Long.parseLong(delAdmin)))
                                 .append("本就不是管理员")
                                 .build();
                         event.getSubject().sendMessage(chain);
                     }
                 } else {
-                    for(int i = 0; i < Admins.size(); i++){
-                        if(Admins.get(i) == newAdmin) {
-                            Admins.remove(i--);
-                        }
-                    }
+                    Admins.remove(delAdmin);
                     try {
                         Properties pro = new Properties();
                         pro.load(new FileInputStream("config/CAIconf.properties"));
                         OutputStream ops = new FileOutputStream("config/CAIconf.properties");
                         pro.setProperty("Admins", String.join(",", Admins));
-                        pro.store(ops, "将" + newAdmin + "从管理员列表中移除了");
+                        pro.store(ops, "将" + delAdmin + "从管理员列表中移除了");
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.out.println("更新管理员列表出错");
                     }
                     MessageChain chain = new MessageChainBuilder()
                             .append("已撤销")
-                            .append(new At(Long.parseLong(newAdmin)))
+                            .append(new At(Long.parseLong(delAdmin)))
                             .append("的管理员身份")
                             .build();
                     event.getSubject().sendMessage(chain);
                 }
             }
         } else {
-            MessageChain chain = new MessageChainBuilder()
-                    .append(NoPower)
-                    .build();
-            event.getSubject().sendMessage(chain);
+            if (NoPower != ""){
+                MessageChain chain = new MessageChainBuilder()
+                        .append(NoPower)
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
         }
     }
     private void noPower(String msg, MessageEvent event){
         if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))) {
-            String newNoPower = msg.substring("重设权限不够时的回复" .length() + 1);
+            String newNoPower = "";
+            try {
+                newNoPower = msg.substring("重设权限不够时的回复" .length() + 1);
+            } catch(StringIndexOutOfBoundsException ex) {
+                MessageChain chain = new MessageChainBuilder()
+                        .append(new At(InitAdmin))
+                        .append("已关闭权限不够时的提示信息")
+                        .build();
+                event.getSubject().sendMessage(chain);
+            }
             NoPower = newNoPower;
             try {
                 Properties pro = new Properties();
