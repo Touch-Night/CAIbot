@@ -492,7 +492,6 @@ public class CAIListener extends SimpleListenerHost {
                 delAdmin = msg.substring("移除管理员" .length() + 1);
             } catch (StringIndexOutOfBoundsException ex) {
                 MessageChain chain = new MessageChainBuilder()
-                        .append(new At(InitAdmin))
                         .append("要将谁从管理员列表中移除？")
                         .build();
                 event.getSubject().sendMessage(chain);
