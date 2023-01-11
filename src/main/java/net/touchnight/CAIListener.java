@@ -202,7 +202,7 @@ public class CAIListener extends SimpleListenerHost {
         }
     }
 
-    private  void resetPrefix(String msg, MessageEvent event) {
+    private void resetPrefix(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin) {
             String newPrefix = "";
             try{
@@ -241,13 +241,14 @@ public class CAIListener extends SimpleListenerHost {
     }
 
     private JSONObject getAns(String msg, MessageEvent event) {
-        OkHttpClient client = new OkHttpClient.Builder()
+        try{
+            OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(50, TimeUnit.SECONDS)
                 .readTimeout(50, TimeUnit.SECONDS)
                 .build();
-        MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, "{\"content\":\"" + msg + "\",\"roleId\":" + Id + "}");
-        Request request = new Request.Builder()
+            MediaType mediaType = MediaType.parse("application/json");
+            RequestBody body = RequestBody.create(mediaType, "{\"content\":\"" + msg + "\",\"roleId\":" + Id + "}");
+            Request request = new Request.Builder()
                 .url("https://www.ai-topia.com/mr/chat/sendChat")
                 .method("POST", body)
                 .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
@@ -258,7 +259,6 @@ public class CAIListener extends SimpleListenerHost {
                 .addHeader("Te", "trailers")
                 .addHeader("Authorization", Authorization)
                 .build();
-        try {
             Response response = client.newCall(request).execute();
             String stringAns1 = response.body().string();
             JSONObject jsonAns = JSONObject.parseObject(stringAns1);
@@ -314,12 +314,13 @@ public class CAIListener extends SimpleListenerHost {
         }
     }
 
-    private String getHello(String id) throws Exception {
-        OkHttpClient client = new OkHttpClient.Builder()
+    private String getHello(String id) {
+        try{
+            OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(50, TimeUnit.SECONDS)
                 .readTimeout(50, TimeUnit.SECONDS)
                 .build();
-        Request request = new Request.Builder()
+            Request request = new Request.Builder()
                 .url("https://www.ai-topia.com/mr/role/get/" + id)
                 .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
                 .addHeader("Accept", "application/json, text/plain, */*")
@@ -329,7 +330,6 @@ public class CAIListener extends SimpleListenerHost {
                 .addHeader("Te", "trailers")
                 .addHeader("Authorization", Authorization)
                 .build();
-        try {
             Response response = client.newCall(request).execute();
             String stringAns1 = response.body().string();
             JSONObject jsonAns = JSONObject.parseObject(stringAns1);
@@ -375,38 +375,38 @@ public class CAIListener extends SimpleListenerHost {
     }
 
     private String getName(String id) {
-        OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(50, TimeUnit.SECONDS)
-                .readTimeout(50, TimeUnit.SECONDS)
-                .build();
-        MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, "{\"pageNum\":0,\"pageSize\":20}");
-        Request request = new Request.Builder()
-                .url("https://www.ai-topia.com/mr/statistics/useRoleList")
-                .method("POST", body)
-                .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
-                .addHeader("Accept", "application/json, text/plain, */*")
-                .addHeader("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
-                .addHeader("Referer", "https://www.ai-topia.com/")
-                .addHeader("Origin", "https://www.ai-topia.com")
-                .addHeader("Te", "trailers")
-                .addHeader("Authorization", Authorization)
-                .build();
         try {
-            Response response = client.newCall(request).execute();
-            String stringAns1 = response.body().string();
-            JSONObject jsonAns = JSONObject.parseObject(stringAns1);
-            String stringAns2 = jsonAns.getString("data");
-            JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
-            JSONArray contentArray = jsonAns2.getJSONArray("content");
-            String name = "";
-            for (int i = 0; i < contentArray.size(); i++) {
-                String RoleId = contentArray.getJSONObject(i).getString("roleId");
-                String RoleName = contentArray.getJSONObject(i).getString("roleName");
-                if (RoleId.equals(id)) {
-                    name = RoleName;
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(50, TimeUnit.SECONDS)
+                    .readTimeout(50, TimeUnit.SECONDS)
+                    .build();
+            MediaType mediaType = MediaType.parse("application/json");
+            RequestBody body = RequestBody.create(mediaType, "{\"pageNum\":0,\"pageSize\":20}");
+            Request request = new Request.Builder()
+                    .url("https://www.ai-topia.com/mr/statistics/useRoleList")
+                    .method("POST", body)
+                    .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
+                    .addHeader("Accept", "application/json, text/plain, */*")
+                    .addHeader("Accept-Language", "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2")
+                    .addHeader("Referer", "https://www.ai-topia.com/")
+                    .addHeader("Origin", "https://www.ai-topia.com")
+                    .addHeader("Te", "trailers")
+                    .addHeader("Authorization", Authorization)
+                    .build();
+                Response response = client.newCall(request).execute();
+                String stringAns1 = response.body().string();
+                JSONObject jsonAns = JSONObject.parseObject(stringAns1);
+                String stringAns2 = jsonAns.getString("data");
+                JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
+                JSONArray contentArray = jsonAns2.getJSONArray("content");
+                String name = "";
+                for (int i = 0; i < contentArray.size(); i++) {
+                    String RoleId = contentArray.getJSONObject(i).getString("roleId");
+                    String RoleName = contentArray.getJSONObject(i).getString("roleName");
+                    if (RoleId.equals(id)) {
+                        name = RoleName;
+                    }
                 }
-            }
             response.close();
             return name;
         } catch (Exception e) {
