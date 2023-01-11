@@ -68,20 +68,20 @@ public class CAIListener extends SimpleListenerHost {
                 if (Id == "") {
                     MessageChain chain = new MessageChainBuilder()
                             .append(new QuoteReply(event.getMessage()))
-                            .append(getAns(realMsg).getString("我还不知道我是谁，请先用 " + CommandPrefix + "重设ID <newID> 指令来让我知道我的身份"))
+                            .append(getAns(realMsg, event).getString("我还不知道我是谁，请先用 " + CommandPrefix + "重设ID <newID> 指令来让我知道我的身份"))
                             .build();
                     event.getSubject().sendMessage(chain);
                 } else {
                     MessageChain chain = new MessageChainBuilder()
                             .append(new QuoteReply(event.getMessage()))
-                            .append(getAns(realMsg).getString("我不认识" + Id + "这个ID对应的角色，它似乎没有出现在你AI乌托邦的聊天列表中"))
+                            .append(getAns(realMsg, event).getString("我不认识" + Id + "这个ID对应的角色，它似乎没有出现在你AI乌托邦的聊天列表中"))
                             .build();
                     event.getSubject().sendMessage(chain);
                 }
             } else {
                 MessageChain chain = new MessageChainBuilder()
                         .append(new QuoteReply(event.getMessage()))
-                        .append(getAns(realMsg).getString("content"))
+                        .append(getAns(realMsg, event).getString("content"))
                         .build();
                 event.getSubject().sendMessage(chain);
             }
@@ -240,7 +240,7 @@ public class CAIListener extends SimpleListenerHost {
         }
     }
 
-    private JSONObject getAns(String msg) throws Exception {
+    private JSONObject getAns(String msg, MessageEvent event) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(50, TimeUnit.SECONDS)
                 .readTimeout(50, TimeUnit.SECONDS)
@@ -258,15 +258,23 @@ public class CAIListener extends SimpleListenerHost {
                 .addHeader("Te", "trailers")
                 .addHeader("Authorization", Authorization)
                 .build();
-        Response response = client.newCall(request).execute();
-        String stringAns1 = response.body().string();
-        JSONObject jsonAns = JSONObject.parseObject(stringAns1);
-        String stringAns2 = jsonAns.getString("data");
-        JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
-        MsgId = jsonAns2.getString("id");
-        System.out.println(msg);
-        response.close();
-        return jsonAns2;
+        try {
+            Response response = client.newCall(request).execute();
+            String stringAns1 = response.body().string();
+            JSONObject jsonAns = JSONObject.parseObject(stringAns1);
+            String stringAns2 = jsonAns.getString("data");
+            JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
+            MsgId = jsonAns2.getString("id");
+            System.out.println(msg);
+            response.close();
+            return jsonAns2;
+        } catch (Exception e) {
+            MessageChain chain = new MessageChainBuilder()
+                    .append("似乎密钥未填写或已经过期，使用 " + CommandPrefix + "微信登录 来重新获取密钥吧")
+                    .build();
+            event.getSubject().sendMessage(chain);
+            return null;
+        }
     }
 
     private String reSend(String id, MessageEvent event) {
@@ -321,14 +329,18 @@ public class CAIListener extends SimpleListenerHost {
                 .addHeader("Te", "trailers")
                 .addHeader("Authorization", Authorization)
                 .build();
-        Response response = client.newCall(request).execute();
-        String stringAns1 = response.body().string();
-        JSONObject jsonAns = JSONObject.parseObject(stringAns1);
-        String stringAns2 = jsonAns.getString("data");
-        JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
-        String Hello = jsonAns2.getString("greeting");
-        response.close();
-        return Hello;
+        try {
+            Response response = client.newCall(request).execute();
+            String stringAns1 = response.body().string();
+            JSONObject jsonAns = JSONObject.parseObject(stringAns1);
+            String stringAns2 = jsonAns.getString("data");
+            JSONObject jsonAns2 = JSONObject.parseObject(stringAns2);
+            String Hello = jsonAns2.getString("greeting");
+            response.close();
+            return Hello;
+        } catch (Exception e) {
+            return "似乎密钥未填写或已经过期，使用 " + CommandPrefix + "微信登录 来重新获取密钥吧";
+        }
     }
 
     private void Flush(MessageEvent event) throws Exception {
