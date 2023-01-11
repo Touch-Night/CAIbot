@@ -44,7 +44,7 @@ public class CAIListener extends SimpleListenerHost {
             pro.setProperty("Id", "");
             pro.setProperty("CommandPrefix", "/");
             pro.setProperty("InitAdmin", "10000");
-            pro.setProperty("Admins", "");
+            pro.setProperty("Admins", "10001");
             pro.setProperty("NoPower", "你的权限不够");
             pro.store(new FileOutputStream("config/CAIconf.properties"),"see https://mirai.mamoe.net/topic/1904/caibot-%E8%BF%9E%E6%8E%A5ai%E4%B9%8C%E6%89%98%E9%82%A6%E4%B8%8Eqq%E8%81%8A%E5%A4%A9%E6%9C%BA%E5%99%A8%E4%BA%BA for instuctions");
             System.out.println("已创建配置文件");
@@ -64,7 +64,7 @@ public class CAIListener extends SimpleListenerHost {
             }
             msg = msg.replace(at, getName(Id));
             realMsg = realMsg.replace(realAt, getName(Id));
-            if (getName(Id) == "???"){
+            if (getName(Id) == ""){
                 if (Id == "") {
                     MessageChain chain = new MessageChainBuilder()
                             .append(new QuoteReply(event.getMessage()))
@@ -121,8 +121,13 @@ public class CAIListener extends SimpleListenerHost {
 
     private void resetID(String msg, MessageEvent event) {
         if (event.getSender().getId() == InitAdmin || Admins.contains(Long.toString(event.getSender().getId()))){
-            String newID = msg.substring("重设ID".length() + 1);
-            if (getName(newID) == "???"){
+            String newID = "";
+            try {
+                newID = msg.substring("重设ID".length() + 1);
+            } catch (StringIndexOutOfBoundsException e) {
+                newID = "";
+            }
+            if (getName(newID) == ""){
                 if (newID == "") {
                     MessageChain chain = new MessageChainBuilder()
                             .append("我的ID在哪？我怎么没看见？")
@@ -376,7 +381,7 @@ public class CAIListener extends SimpleListenerHost {
             response.close();
             return name;
         } catch (Exception e) {
-            return "???";
+            return "";
         }
     }
     private void op(String msg, MessageEvent event) {
